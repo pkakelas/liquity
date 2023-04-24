@@ -206,22 +206,14 @@ task("deploy", "Deploys the contracts to the network")
         assert(!_priceFeedIsTestnet(contracts.priceFeed));
 
         if (hasOracles(env.network.name)) {
-          const tellorCallerAddress = await deployTellorCaller(
-            deployer,
-            getContractFactory(env),
-            oracleAddresses[env.network.name].tellor,
-            overrides
-          );
-
           console.log(`Hooking up PriceFeed with oracles ...`);
 
           await contracts.priceFeed.setAddresses(
             oracleAddresses[env.network.name].chainlink,
-            tellorCallerAddress,
-            { gasLimit: 100000 }
-          );
-        }
-      }
+
+=======
+            overrides
+>>>>>>> ac275a0f (Use single 
 
       fs.mkdirSync(path.join("deployments", channel), { recursive: true });
 

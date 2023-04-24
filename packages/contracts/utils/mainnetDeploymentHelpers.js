@@ -225,7 +225,7 @@ class MainnetDeploymentHelper {
     const gasPrice = this.configParams.GAS_PRICE
     // Set ChainlinkAggregatorProxy and TellorCaller in the PriceFeed
     await this.isOwnershipRenounced(contracts.priceFeed) ||
-      await this.sendAndWaitForTransaction(contracts.priceFeed.setAddresses(chainlinkProxyAddress, contracts.tellorCaller.address, { gasPrice }))
+      await this.sendAndWaitForTransaction(contracts.priceFeed.setAddresses(chainlinkProxyAddress, { gasPrice }))
 
     // set TroveManager addr in SortedTroves
     await this.isOwnershipRenounced(contracts.sortedTroves) ||
