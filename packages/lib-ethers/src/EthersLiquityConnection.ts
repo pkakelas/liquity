@@ -4,15 +4,9 @@ import { Signer } from "@ethersproject/abstract-signer";
 import { Decimal } from "@liquity/lib-base";
 
 import devOrNull from "../deployments/dev.json";
-import goerli from "../deployments/goerli.json";
-import kovan from "../deployments/kovan.json";
-import rinkeby from "../deployments/rinkeby.json";
-import ropsten from "../deployments/ropsten.json";
-import mainnet from "../deployments/mainnet.json";
-import kiln from "../deployments/kiln.json";
 
 import { numberify, panic } from "./_utils";
-import { EthersProvider, EthersSigner } from "./types";
+import { EthersProvider, EthersSigner, PriceFeedType } from "./types";
 
 import {
   _connectToContracts,
@@ -28,13 +22,6 @@ const dev = devOrNull as _LiquityDeploymentJSON | null;
 const deployments: {
   [chainId: number]: _LiquityDeploymentJSON | undefined;
 } = {
-  [mainnet.chainId]: mainnet,
-  [ropsten.chainId]: ropsten,
-  [rinkeby.chainId]: rinkeby,
-  [goerli.chainId]: goerli,
-  [kovan.chainId]: kovan,
-  [kiln.chainId]: kiln,
-
   ...(dev !== null ? { [dev.chainId]: dev } : {})
 };
 
@@ -84,7 +71,7 @@ export interface EthersLiquityConnection extends EthersLiquityConnectionOptional
   readonly addresses: Record<string, string>;
 
   /** @internal */
-  readonly _priceFeedIsTestnet: boolean;
+  readonly _priceFeedType: PriceFeedType;
 
   /** @internal */
   readonly _isDev: boolean;
@@ -263,7 +250,7 @@ export interface EthersLiquityConnectionOptionalParams {
    *
    * @remarks
    * For example
-   * {@link EthersLiquity.depositLUSDInStabilityPool | depositLUSDInStabilityPool(amount, frontendTag?)}
+   * {@link EthersLiquity.deposit1USDInStabilityPool | deposit1USDInStabilityPool(amount, frontendTag?)}
    * will tag newly made Stability Deposits with this address when its `frontendTag` parameter is
    * omitted.
    */

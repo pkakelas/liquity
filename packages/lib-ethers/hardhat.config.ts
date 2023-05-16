@@ -15,10 +15,14 @@ import "@nomiclabs/hardhat-ethers";
 
 import { Decimal } from "@liquity/lib-base";
 
-import { deployAndSetupContracts, deployTellorCaller, setSilent } from "./utils/deploy";
-import { _connectToContracts, _LiquityDeploymentJSON, _priceFeedIsTestnet } from "./src/contracts";
+import { deployAndSetupContracts, setSilent } from "./utils/deploy";
+import { _connectToContracts, _LiquityDeploymentJSON } from "./src/contracts";
 
 import accounts from "./accounts.json";
+import { PriceFeed } from "./types";
+import { PriceFeedTestnet } from "./types";
+
+type PriceFeedType = "mainnet" | "testnet" | "dev"
 
 dotenv.config();
 
@@ -53,49 +57,23 @@ const generateRandomAccounts = (numberOfAccounts: number) => {
 const deployerAccount = process.env.DEPLOYER_PRIVATE_KEY || Wallet.createRandom().privateKey;
 const devChainRichAccount = "0x4d5db4107d237df6a3d58ee5f70ae63d73d7658d4026f2eefd2f204c81682cb7";
 
-const infuraApiKey = "ad9cef41c9c844a7b54d10be24d416e5";
-
-const infuraNetwork = (name: string): { [name: string]: NetworkUserConfig } => ({
-  [name]: {
-    url: `https://${name}.infura.io/v3/${infuraApiKey}`,
-    accounts: [deployerAccount]
-  }
-});
-
-// https://docs.chain.link/docs/ethereum-addresses
-// https://docs.tellor.io/tellor/integration/reference-page
-
 const oracleAddresses = {
+  dev: {},
+  testnet: {
+    chainlink: "0xcEe686F89bc0dABAd95AEAAC980aE1d97A075FAD"
+  },
   mainnet: {
-    chainlink: "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
-    tellor: "0x88dF592F8eb5D7Bd38bFeF7dEb0fBc02cf3778a0"
-  },
-  rinkeby: {
-    chainlink: "0x8A753747A1Fa494EC906cE90E9f37563A8AF630e",
-    tellor: "0x88dF592F8eb5D7Bd38bFeF7dEb0fBc02cf3778a0" // Core
-  },
-  kovan: {
-    chainlink: "0x9326BFA02ADD2366b30bacB125260Af641031331",
-    tellor: "0x20374E579832859f180536A69093A126Db1c8aE9" // Playground
-  },
-  goerli: {
-    chainlink: "0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e",
-    tellor: "0x51c59c6cAd28ce3693977F2feB4CfAebec30d8a2"
+    //TODO: Fill tellor that
+    chainlink: "0xdCD81FbbD6c4572A69a534D8b8152c562dA8AbEF",
   }
 };
 
-const hasOracles = (network: string): network is keyof typeof oracleAddresses =>
-  network in oracleAddresses;
-
-const wethAddresses = {
-  mainnet: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-  ropsten: "0xc778417E063141139Fce010982780140Aa0cD5Ab",
-  rinkeby: "0xc778417E063141139Fce010982780140Aa0cD5Ab",
-  goerli: "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6",
-  kovan: "0xd0A1E359811322d97991E03f863a0C30C2cF029C"
+const woneAddresses = {
+  mainnet: "0xcF664087a5bB0237a0BAd6742852ec6c8d69A27a",
+  testnet: "0x7466d7d0c21fa05f32f5a0fa27e12bdc06348ce2"
 };
 
-const hasWETH = (network: string): network is keyof typeof wethAddresses => network in wethAddresses;
+const hasWONE = (network: string): network is keyof typeof woneAddresses => network in woneAddresses;
 
 const config: HardhatUserConfig = {
   networks: {
@@ -116,20 +94,16 @@ const config: HardhatUserConfig = {
       accounts: [deployerAccount, devChainRichAccount, ...generateRandomAccounts(numAccounts - 2)]
     },
 
-    ...infuraNetwork("ropsten"),
-    ...infuraNetwork("rinkeby"),
-    ...infuraNetwork("goerli"),
-    ...infuraNetwork("kovan"),
-    ...infuraNetwork("mainnet"),
-
-    kiln: {
-      url: "https://rpc.kiln.themerge.dev",
+    testnet: {
+      url: "https://api.s0.b.hmny.io",
       accounts: [deployerAccount]
     },
 
-    forkedMainnet: {
-      url: "http://localhost:8545"
+    mainnet: {
+      url: "https://api.harmony.one",
+      accounts: [deployerAccount]
     }
+
   },
 
   paths: {
@@ -142,8 +116,8 @@ declare module "hardhat/types/runtime" {
   interface HardhatRuntimeEnvironment {
     deployLiquity: (
       deployer: Signer,
-      useRealPriceFeed?: boolean,
-      wethAddress?: string,
+      priceFeedType?: PriceFeedType,
+      woneAddress?: string,
       overrides?: Overrides
     ) => Promise<_LiquityDeploymentJSON>;
   }
@@ -164,16 +138,16 @@ const getContractFactory: (
 extendEnvironment(env => {
   env.deployLiquity = async (
     deployer,
-    useRealPriceFeed = false,
-    wethAddress = undefined,
+    priceFeedType = "testnet",
+    woneAddress = undefined,
     overrides?: Overrides
   ) => {
     const deployment = await deployAndSetupContracts(
       deployer,
       getContractFactory(env),
-      !useRealPriceFeed,
+      priceFeedType,
       env.network.name === "dev",
-      wethAddress,
+      woneAddress,
       overrides
     );
 
@@ -184,7 +158,7 @@ extendEnvironment(env => {
 type DeployParams = {
   channel: string;
   gasPrice?: number;
-  useRealPriceFeed?: boolean;
+  priceFeedType?: PriceFeedType;
   createUniswapPair?: boolean;
 };
 
@@ -194,62 +168,60 @@ task("deploy", "Deploys the contracts to the network")
   .addOptionalParam("channel", "Deployment channel to deploy into", defaultChannel, types.string)
   .addOptionalParam("gasPrice", "Price to pay for 1 gas [Gwei]", undefined, types.float)
   .addOptionalParam(
-    "useRealPriceFeed",
-    "Deploy the production version of PriceFeed and connect it to Chainlink",
+    "priceFeedType",
+    "Use one of mainnet/testnet/dev",
     undefined,
-    types.boolean
+    types.string
   )
   .addOptionalParam(
     "createUniswapPair",
-    "Create a real Uniswap v2 WETH-LUSD pair instead of a mock ERC20 token",
+    "Create a real Uniswap v2 WONE-1USD pair instead of a mock ERC20 token",
     undefined,
     types.boolean
   )
   .setAction(
-    async ({ channel, gasPrice, useRealPriceFeed, createUniswapPair }: DeployParams, env) => {
+    async ({ channel, gasPrice, priceFeedType, createUniswapPair }: DeployParams, env) => {
       const overrides = { gasPrice: gasPrice && Decimal.from(gasPrice).div(1000000000).hex };
       const [deployer] = await env.ethers.getSigners();
 
-      useRealPriceFeed ??= env.network.name === "mainnet";
-
-      if (useRealPriceFeed && !hasOracles(env.network.name)) {
-        throw new Error(`PriceFeed not supported on ${env.network.name}`);
+      priceFeedType = priceFeedType || "dev"
+      if (!["mainnet", "testnet", "dev"].includes(priceFeedType))  {
+        throw new Error("Invalid PriceFeed type") 
       }
 
-      let wethAddress: string | undefined = undefined;
+      let woneAddress: string | undefined = undefined;
       if (createUniswapPair) {
-        if (!hasWETH(env.network.name)) {
-          throw new Error(`WETH not deployed on ${env.network.name}`);
+        if (!hasWONE(env.network.name)) {
+          throw new Error(`WONE not deployed on ${env.network.name}`);
         }
-        wethAddress = wethAddresses[env.network.name];
+        woneAddress = woneAddresses[env.network.name];
       }
 
       setSilent(false);
 
-      const deployment = await env.deployLiquity(deployer, useRealPriceFeed, wethAddress, overrides);
+      const deployment = await env.deployLiquity(deployer, priceFeedType, woneAddress, overrides);
 
-      if (useRealPriceFeed) {
-        const contracts = _connectToContracts(deployer, deployment);
+      switch (priceFeedType) {
+        case 'mainnet': {
+          const contracts = _connectToContracts(deployer, deployment);
 
-        assert(!_priceFeedIsTestnet(contracts.priceFeed));
-
-        if (hasOracles(env.network.name)) {
-          const tellorCallerAddress = await deployTellorCaller(
-            deployer,
-            getContractFactory(env),
-            oracleAddresses[env.network.name].tellor,
-            overrides
+          await (contracts.priceFeed as PriceFeed).setAddresses(
+            oracleAddresses['mainnet'].chainlink,
+            oracleAddresses['mainnet'].chainlink,
+            { gasLimit: 100000 }
           );
-
-          console.log(`Hooking up PriceFeed with oracles ...`);
-
-          const tx = await contracts.priceFeed.setAddresses(
-            oracleAddresses[env.network.name].chainlink,
-            tellorCallerAddress,
-            overrides
+          break
+        }
+        case 'testnet': {
+          const contracts = _connectToContracts(deployer, deployment);
+          await (contracts.priceFeed as PriceFeedTestnet).setAddresses(
+            oracleAddresses['testnet'].chainlink,
+            { gasLimit: 100000 }
           );
-
-          await tx.wait();
+          break
+        }
+        case 'dev': {
+          break
         }
       }
 

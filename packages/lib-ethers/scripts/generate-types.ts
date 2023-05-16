@@ -13,12 +13,13 @@ import GasPool from "../../contracts/artifacts/contracts/GasPool.sol/GasPool.jso
 import HintHelpers from "../../contracts/artifacts/contracts/HintHelpers.sol/HintHelpers.json";
 import IERC20 from "../../contracts/artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json";
 import LockupContractFactory from "../../contracts/artifacts/contracts/LQTY/LockupContractFactory.sol/LockupContractFactory.json";
-import LUSDToken from "../../contracts/artifacts/contracts/LUSDToken.sol/LUSDToken.json";
+import ONEUSDToken from "../../contracts/artifacts/contracts/ONEUSDToken.sol/ONEUSDToken.json";
 import LQTYStaking from "../../contracts/artifacts/contracts/LQTY/LQTYStaking.sol/LQTYStaking.json";
 import LQTYToken from "../../contracts/artifacts/contracts/LQTY/LQTYToken.sol/LQTYToken.json";
 import MultiTroveGetter from "../../contracts/artifacts/contracts/MultiTroveGetter.sol/MultiTroveGetter.json";
 import PriceFeed from "../../contracts/artifacts/contracts/PriceFeed.sol/PriceFeed.json";
-import PriceFeedTestnet from "../../contracts/artifacts/contracts/TestContracts/PriceFeedTestnet.sol/PriceFeedTestnet.json";
+import PriceFeedTestnet from "../../contracts/artifacts/contracts/PriceFeedTestnet.sol/PriceFeedTestnet.json";
+import PriceFeedLocalnet from "../../contracts/artifacts/contracts/TestContracts/PriceFeedLocalnet.sol/PriceFeedLocalnet.json";
 import SortedTroves from "../../contracts/artifacts/contracts/SortedTroves.sol/SortedTroves.json";
 import StabilityPool from "../../contracts/artifacts/contracts/StabilityPool.sol/StabilityPool.json";
 import TroveManager from "../../contracts/artifacts/contracts/TroveManager.sol/TroveManager.json";
@@ -153,12 +154,13 @@ const contractArtifacts = [
   HintHelpers,
   IERC20,
   LockupContractFactory,
-  LUSDToken,
+  ONEUSDToken,
   LQTYStaking,
   LQTYToken,
   MultiTroveGetter,
   PriceFeed,
   PriceFeedTestnet,
+  PriceFeedLocalnet,
   SortedTroves,
   StabilityPool,
   TroveManager,

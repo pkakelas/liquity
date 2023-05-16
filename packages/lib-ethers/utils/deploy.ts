@@ -1,6 +1,7 @@
 import { Signer } from "@ethersproject/abstract-signer";
 import { ContractTransaction, ContractFactory, Overrides } from "@ethersproject/contracts";
 import { Wallet } from "@ethersproject/wallet";
+import { PriceFeedType } from "../src/types";
 
 import { Decimal } from "@liquity/lib-base";
 
@@ -55,7 +56,7 @@ const deployContract: (
 const deployContracts = async (
   deployer: Signer,
   getContractFactory: (name: string, signer: Signer) => Promise<ContractFactory>,
-  priceFeedIsTestnet = true,
+  priceFeedType: PriceFeedType = "dev",
   overrides?: Overrides
 ): Promise<[addresses: Omit<_LiquityContractAddresses, "uniToken">, startBlock: number]> => {
   const [activePoolAddress, startBlock] = await deployContractAndGetBlockNumber(
@@ -91,7 +92,7 @@ const deployContracts = async (
     priceFeed: await deployContract(
       deployer,
       getContractFactory,
-      priceFeedIsTestnet ? "PriceFeedTestnet" : "PriceFeed",
+      priceFeedType === 'mainnet' ? "PriceFeed" : (priceFeedType === 'testnet' ? "PriceFeedTestnet" : "PriceFeedLocalnet"),
       { ...overrides }
     ),
     sortedTroves: await deployContract(deployer, getContractFactory, "SortedTroves", {
@@ -109,10 +110,10 @@ const deployContracts = async (
   return [
     {
       ...addresses,
-      lusdToken: await deployContract(
+      oneusdToken: await deployContract(
         deployer,
         getContractFactory,
-        "LUSDToken",
+        "ONEUSDToken",
         addresses.troveManager,
         addresses.stabilityPool,
         addresses.borrowerOperations,
@@ -159,7 +160,7 @@ const connectContracts = async (
     activePool,
     borrowerOperations,
     troveManager,
-    lusdToken,
+    oneusdToken,
     collSurplusPool,
     communityIssuance,
     defaultPool,
@@ -199,7 +200,7 @@ const connectContracts = async (
         gasPool.address,
         collSurplusPool.address,
         priceFeed.address,
-        lusdToken.address,
+        oneusdToken.address,
         sortedTroves.address,
         lqtyToken.address,
         lqtyStaking.address,
@@ -216,7 +217,7 @@ const connectContracts = async (
         collSurplusPool.address,
         priceFeed.address,
         sortedTroves.address,
-        lusdToken.address,
+        oneusdToken.address,
         lqtyStaking.address,
         { ...overrides, nonce }
       ),
@@ -226,7 +227,7 @@ const connectContracts = async (
         borrowerOperations.address,
         troveManager.address,
         activePool.address,
-        lusdToken.address,
+        oneusdToken.address,
         sortedTroves.address,
         priceFeed.address,
         communityIssuance.address,
@@ -265,7 +266,7 @@ const connectContracts = async (
     nonce =>
       lqtyStaking.setAddresses(
         lqtyToken.address,
-        lusdToken.address,
+        oneusdToken.address,
         troveManager.address,
         borrowerOperations.address,
         activePool.address,
@@ -316,9 +317,9 @@ const deployMockUniToken = (
 export const deployAndSetupContracts = async (
   deployer: Signer,
   getContractFactory: (name: string, signer: Signer) => Promise<ContractFactory>,
-  _priceFeedIsTestnet = true,
+  _priceFeedType: PriceFeedType = "dev",
   _isDev = true,
-  wethAddress?: string,
+  woneAddress?: string,
   overrides?: Overrides
 ): Promise<_LiquityDeploymentJSON> => {
   if (!deployer.provider) {
@@ -335,19 +336,19 @@ export const deployAndSetupContracts = async (
     bootstrapPeriod: 0,
     totalStabilityPoolLQTYReward: "0",
     liquidityMiningLQTYRewardRate: "0",
-    _priceFeedIsTestnet,
-    _uniTokenIsMock: !wethAddress,
+    _priceFeedType: _priceFeedType,
+    _uniTokenIsMock: !woneAddress,
     _isDev,
 
-    ...(await deployContracts(deployer, getContractFactory, _priceFeedIsTestnet, overrides).then(
+    ...(await deployContracts(deployer, getContractFactory, _priceFeedType, overrides).then(
       async ([addresses, startBlock]) => ({
         startBlock,
 
         addresses: {
           ...addresses,
 
-          uniToken: await (wethAddress
-            ? createUniswapV2Pair(deployer, wethAddress, addresses.lusdToken, overrides)
+          uniToken: await (woneAddress
+            ? createUniswapV2Pair(deployer, woneAddress, addresses.oneusdToken, overrides)
             : deployMockUniToken(deployer, getContractFactory, overrides))
         }
       })

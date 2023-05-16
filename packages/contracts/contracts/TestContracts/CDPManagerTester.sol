@@ -17,8 +17,8 @@ contract TroveManagerTester is TroveManager {
         return _getCollGasCompensation(_coll);
     }
 
-    function getLUSDGasCompensation() external pure returns (uint) {
-        return LUSD_GAS_COMPENSATION;
+    function get1USDGasCompensation() external pure returns (uint) {
+        return ONEUSD_GAS_COMPENSATION;
     }
 
     function getCompositeDebt(uint _debt) external pure returns (uint) {
@@ -45,8 +45,8 @@ contract TroveManagerTester is TroveManager {
         baseRate = _baseRate;
     }
 
-    function callGetRedemptionFee(uint _ETHDrawn) external view returns (uint) {
-        _getRedemptionFee(_ETHDrawn);
+    function callGetRedemptionFee(uint _ONEDrawn) external view returns (uint) {
+        _getRedemptionFee(_ONEDrawn);
     }  
 
     function getActualDebtFromComposite(uint _debtVal) external pure returns (uint) {
